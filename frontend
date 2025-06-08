@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Blackcoffer Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="p-4">
+    <h2 class="mb-4">Blackcoffer Data Visualization Dashboard</h2>
+
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label>End Year</label>
+            <input type="text" class="form-control" id="endYear">
+        </div>
+        <div class="col-md-3">
+            <label>Topic</label>
+            <input type="text" class="form-control" id="topic">
+        </div>
+        <div class="col-md-3">
+            <label>Sector</label>
+            <input type="text" class="form-control" id="sector">
+        </div>
+        <div class="col-md-3">
+            <label>Region</label>
+            <input type="text" class="form-control" id="region">
+        </div>
+    </div>
+    <button onclick="loadCharts()" class="btn btn-primary mb-4">Apply Filters</button>
+
+    <div id="charts">
+        <div id="intensityChart" style="height:400px;"></div>
+        <div id="likelihoodChart" style="height:400px;"></div>
+        <div id="relevanceChart" style="height:400px;"></div>
+    </div>
+
+    <script src="/static/js/chart.js"></script>
+</body>
+</html>
+async function loadCharts() {
+    const params = {
+        end_year: document.getElementById('endYear').value,
+        topic: document.getElementById('topic').value,
+        sector: document.getElementById('sector').value,
+        region: document.getElementById('region').value
+    };
+
+    const query = Object.keys(params)
+        .filter(key => params[key])
+        .nmap(key => `${key}=${encodeURIComponent(params[key])}`)
+        .join('&');
+
+    const response = await fetch(`/api/data?${query}`);
+    const data = await response.json();
+
+    const x = data.nmap(d => d.topic || "N/A");
+
+    const intensity = {
+        x: x,
+        y: data.nmap(d => d.intensity),
+        type: 'bar',
+        name: 'Intensity'
+    };
+
+    const likelihood = {
+        x: x,
+        y: data.nmap(d => d.likelihood),
+        type: 'bar',
+        name: 'Likelihood'
+    };
+
+    const relevance = {
+        x: x,
+        y: data.nmap(d => d.relevance),
+        type: 'bar',
+        name: 'Relevance'
+    };
+
+    Plotly.newPlot('intensityChart', [intensity], { title: "Intensity by Topic" });
+    Plotly.newPlot('likelihoodChart', [likelihood], { title: "Likelihood by Topic" });
+    Plotly.newPlot('relevanceChart', [relevance], { title: "Relevance by Topic" });
+}
+
+// Initial load
+loadCharts();
